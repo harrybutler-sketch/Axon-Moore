@@ -11,7 +11,9 @@ import {
   TrendingUp,
   MapPin,
   Clock,
-  User as UserIcon
+  User as UserIcon,
+  Download,
+  Loader2
 } from 'lucide-react'
 import { type MarketEvent, type TriggerType, type EventStatus } from '@/types'
 import Link from 'next/link'
@@ -88,6 +90,7 @@ export default function EventsTable() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<EventStatus | 'all'>('all')
   const [triggerFilter, setTriggerFilter] = useState<TriggerType | 'all'>('all')
+  const [scraping, setScraping] = useState(false)
 
   const supabase = createClient()
 
@@ -108,6 +111,71 @@ export default function EventsTable() {
 
     fetchEvents()
   }, [supabase])
+
+  const handleScrapeLatest = async () => {
+    setScraping(true)
+    try {
+      // 1. Trigger Google Scraper
+      const googleRes = await fetch('/api/ingest/apify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'trigger',
+          actorId: 'apify/google-search-scraper',
+          input: { 
+            queries: 'new PE investment UK, CFO appointment Manchester, M&A news finance UK, series B funding recruitment triggers', 
+            maxPagesPerQuery: 1 
+          }
+        })
+      })
+      const googleData = await googleRes.json()
+
+      // 2. Trigger LinkedIn Scraper
+      const linkedinRes = await fetch('/api/ingest/apify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'trigger',
+          actorId: 'apify/linkedin-search-scraper',
+          input: { searchUrl: 'https://www.linkedin.com/search/results/content/?keywords=hiring%20CFO%20OR%20"finance%20director"%20PE%20OR%20"venture%20capital"' }
+        })
+      })
+      const linkedinData = await linkedinRes.json()
+
+      // 3. Wait a few seconds to simulate/allow start (in real app would use webhooks)
+      await new Promise(r => setTimeout(r, 3000))
+
+      // 4. Ingest Google Results
+      if (googleData.datasetId) {
+        await fetch('/api/ingest/apify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'ingest', datasetId: googleData.datasetId })
+        })
+      }
+
+      // 5. Ingest LinkedIn Results
+      if (linkedinData.datasetId) {
+        await fetch('/api/ingest/apify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'ingest', datasetId: linkedinData.datasetId })
+        })
+      }
+
+      // 6. Refresh Events
+      const { data } = await supabase
+        .from('events')
+        .select('*, consultant:consultants(*)')
+        .order('priority_score', { ascending: false })
+      
+      if (data) setEvents(data)
+    } catch (err) {
+      console.error('Scrape failed:', err)
+    } finally {
+      setScraping(false)
+    }
+  }
 
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.company_name.toLowerCase().includes(search.toLowerCase()) || 
@@ -172,6 +240,15 @@ export default function EventsTable() {
             <option value="acquisition">Acquisition</option>
             <option value="leadership hire">Leadership Hire</option>
           </select>
+
+          <button
+            onClick={handleScrapeLatest}
+            disabled={scraping}
+            className="flex items-center gap-2 bg-brand-orange text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-brand-orange/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+          >
+            {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {scraping ? 'Scraping...' : 'Scrape Latest'}
+          </button>
         </div>
       </div>
 
