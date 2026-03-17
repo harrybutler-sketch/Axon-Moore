@@ -8,12 +8,25 @@ export async function POST(request: Request) {
     const { action, actorId, input, datasetId } = await request.json()
 
     if (action === 'trigger') {
-      const hasToken = !!process.env.APIFY_API_TOKEN;
-      console.log(`[Apify] Trigger request for ${actorId}. Token available: ${hasToken}`);
+      const token = process.env.APIFY_API_TOKEN;
+      const hasToken = !!token;
+      console.log('--------------------------------------------------');
+      console.log(`[APIFY TRIGGER DEBUG]`);
+      console.log(`Action: trigger`);
+      console.log(`Actor ID: ${actorId}`);
+      console.log(`Token Found: ${hasToken} (${hasToken ? token.substring(0, 10) + '...' : 'NONE'})`);
+      console.log(`Input: ${JSON.stringify(input).substring(0, 100)}...`);
       
-      const run = await runApifyActor(actorId, input)
-      console.log(`[Apify] Trigger successful. Run ID: ${run.id}`);
-      return NextResponse.json({ runId: run.id, datasetId: run.defaultDatasetId })
+      try {
+        const run = await runApifyActor(actorId, input)
+        console.log(`[APIFY SUCCESS] Run ID: ${run.id}`);
+        console.log('--------------------------------------------------');
+        return NextResponse.json({ runId: run.id, datasetId: run.defaultDatasetId })
+      } catch (err: any) {
+        console.error(`[APIFY FAILURE] ${err.message}`);
+        console.log('--------------------------------------------------');
+        throw err; // Let the catch block handle the response
+      }
     }
 
     const supabase = await createClient()
@@ -23,11 +36,24 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Dataset ID is required' }, { status: 400 })
       }
 
-      const items = await getApifyDataset(datasetId)
+      const rawItems = await getApifyDataset(datasetId)
+      
+      // Flatten organic results if they exist (Google Search format)
+      let items: any[] = []
+      rawItems.forEach((item: any) => {
+        if (item.organicResults && Array.isArray(item.organicResults)) {
+          items = [...items, ...item.organicResults]
+        } else if (item.results && Array.isArray(item.results)) {
+          items = [...items, ...item.results]
+        } else {
+          items.push(item)
+        }
+      })
+
       const results: any[] = []
 
-      // Limit to first 10 items for speed in demo
-      for (const item of items.slice(0, 10)) {
+      // Limit to first 12 items for a rich demo
+      for (const item of items.slice(0, 12)) {
         // Extract raw text from different scraper formats
         const content = item.description || item.text || item.title || JSON.stringify(item)
         

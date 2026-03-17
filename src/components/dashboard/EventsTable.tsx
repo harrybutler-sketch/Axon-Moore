@@ -312,6 +312,31 @@ export default function EventsTable() {
     }
   }
 
+  const handleStatusChange = async (eventId: string, newStatus: EventStatus) => {
+    // 1. Update local state immediately for UI snappiness
+    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: newStatus } : e))
+
+    // 2. Update localStorage (Zero-Config mode)
+    const localEventsStr = localStorage.getItem('axon_local_events')
+    if (localEventsStr) {
+      const localEvents = JSON.parse(localEventsStr)
+      const updatedLocal = localEvents.map((e: any) => e.id === eventId ? { ...e, status: newStatus } : e)
+      localStorage.setItem('axon_local_events', JSON.stringify(updatedLocal))
+    }
+
+    // 3. Update Supabase
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ status: newStatus })
+        .eq('id', eventId)
+      
+      if (error) throw error
+    } catch (err) {
+      console.warn('Supabase status update failed (Demo mode?):', err)
+    }
+  }
+
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.company_name.toLowerCase().includes(search.toLowerCase()) || 
                           event.summary?.toLowerCase().includes(search.toLowerCase())
@@ -453,12 +478,20 @@ export default function EventsTable() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={cn(
-                        "text-[10px] font-bold px-2 py-1 rounded-full border",
-                        getStatusColor(event.status)
-                      )}>
-                        {event.status}
-                      </span>
+                      <select
+                        value={event.status}
+                        onChange={(e) => handleStatusChange(event.id, e.target.value as EventStatus)}
+                        className={cn(
+                          "text-[10px] font-bold px-2 py-1 rounded-full border focus:outline-none focus:ring-1 focus:ring-brand-orange/50 transition-all cursor-pointer",
+                          getStatusColor(event.status)
+                        )}
+                      >
+                        <option value="new">NEW</option>
+                        <option value="reviewed">REVIEWED</option>
+                        <option value="assigned">ASSIGNED</option>
+                        <option value="actioned">ACTIONED</option>
+                        <option value="ignored">IGNORED</option>
+                      </select>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
