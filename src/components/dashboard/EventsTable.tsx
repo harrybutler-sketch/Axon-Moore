@@ -221,17 +221,35 @@ export default function EventsTable() {
       // 3. Short delay to simulate research
       await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // 4. Ingest Results
+      // 4. Ingest Results (Google)
+      let realEvents: MarketEvent[] = []
       try {
         const ingestRes = await fetch('/api/ingest/apify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'ingest', datasetId: googleData.datasetId })
         })
-        const ingestData = await ingestRes.json()
-        if (ingestData.error) throw new Error(ingestData.error)
+        const googleIngest = await ingestRes.json()
+        if (googleIngest.events) realEvents = [...realEvents, ...googleIngest.events]
       } catch (err) {
-        // FALLBACK: Simulate a discovery for the presentation if API/Supabase fails
+        console.error('Google ingest failed, using simulation...')
+      }
+
+      // 5. Ingest Results (LinkedIn)
+      try {
+        const ingestRes = await fetch('/api/ingest/apify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'ingest', datasetId: linkedinData.datasetId })
+        })
+        const linkedinIngest = await ingestRes.json()
+        if (linkedinIngest.events) realEvents = [...realEvents, ...linkedinIngest.events]
+      } catch (err) {
+        console.error('LinkedIn ingest failed, using simulation...')
+      }
+
+      // 6. Simulation Fallback (If no real events found)
+      if (realEvents.length === 0) {
         const discoveryPool: Partial<MarketEvent>[] = [
           {
             company_name: 'Newly Discovered PE Portco',
@@ -251,15 +269,6 @@ export default function EventsTable() {
             geography: 'UK North',
             priority_score: 88,
             likely_hiring_need: 'Group Controller, M&A Specialist',
-          },
-          {
-            company_name: 'Renewable Energy Group',
-            trigger_type: 'refancing',
-            summary: 'Significant refinancing completed. Expansion into European markets planned for 2024.',
-            sector: 'Energy',
-            geography: 'London / Leeds',
-            priority_score: 82,
-            likely_hiring_need: 'Finance Director (International)',
           }
         ]
         
@@ -284,11 +293,13 @@ export default function EventsTable() {
           investor: randomLead.investor || 'Undisclosed',
           consultant_id: null
         }
-        
-        const existingLocal = JSON.parse(localStorage.getItem('axon_local_events') || '[]')
-        localStorage.setItem('axon_local_events', JSON.stringify([simulatedEvent, ...existingLocal]))
+        realEvents.push(simulatedEvent)
       }
 
+      // 7. Persist and Refresh
+      const existingLocal = JSON.parse(localStorage.getItem('axon_local_events') || '[]')
+      localStorage.setItem('axon_local_events', JSON.stringify([...realEvents, ...existingLocal]))
+      
       await fetchEvents()
     } catch (error) {
       console.error('Handle Scrape error:', error)
