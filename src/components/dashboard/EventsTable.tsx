@@ -223,29 +223,33 @@ export default function EventsTable() {
 
       // 4. Ingest Results (Google)
       let realEvents: MarketEvent[] = []
-      try {
-        const ingestRes = await fetch('/api/ingest/apify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'ingest', datasetId: googleData.datasetId })
-        })
-        const googleIngest = await ingestRes.json()
-        if (googleIngest.events) realEvents = [...realEvents, ...googleIngest.events]
-      } catch (err) {
-        console.error('Google ingest failed, using simulation...')
+      if (googleData.datasetId) {
+        try {
+          const ingestRes = await fetch('/api/ingest/apify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'ingest', datasetId: googleData.datasetId })
+          })
+          const googleIngest = await ingestRes.json()
+          if (googleIngest.events) realEvents = [...realEvents, ...googleIngest.events]
+        } catch (err) {
+          console.error('Google ingest failed')
+        }
       }
 
       // 5. Ingest Results (LinkedIn)
-      try {
-        const ingestRes = await fetch('/api/ingest/apify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'ingest', datasetId: linkedinData.datasetId })
-        })
-        const linkedinIngest = await ingestRes.json()
-        if (linkedinIngest.events) realEvents = [...realEvents, ...linkedinIngest.events]
-      } catch (err) {
-        console.error('LinkedIn ingest failed, using simulation...')
+      if (linkedinData.datasetId) {
+        try {
+          const ingestRes = await fetch('/api/ingest/apify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'ingest', datasetId: linkedinData.datasetId })
+          })
+          const linkedinIngest = await ingestRes.json()
+          if (linkedinIngest.events) realEvents = [...realEvents, ...linkedinIngest.events]
+        } catch (err) {
+          console.error('LinkedIn ingest failed')
+        }
       }
 
       // 6. Simulation Fallback (If no real events found)
