@@ -59,7 +59,16 @@ export async function extractMarketTrigger(text: string): Promise<ExtractedData>
         content: `You are an expert recruitment researcher for Axon Moore.
         Your goal is to extract intelligence from market announcements to help our marketing team equip consultants for high-quality outreach.
         
-        CRITICAL FOCUS:
+        CRITICAL FOCUS ON RECRUITMENT TRIGGERS:
+        1. Changes in Leadership: CEO, MD, CFO, FD, or Financial Controller appointments or exits.
+        2. Investment/Funding: Private Equity (PE) or Venture Capital (VC) investment, Series A/B/C rounds, or Growth Capital.
+        3. M&A Activity: Completion of acquisitions, company disposals, or sales of businesses.
+        4. Financial Structural Changes: Refinancing, restructuring, or scale-up professionalization.
+        5. Positive Performance: PR updates on positive trading or expansion plans.
+        
+        GOAL: Identify events that indicate a "significant change" requiring recruitment services (especially finance team professionalization or inherited team refresh).
+        
+        EXTRACTION TASKS:
         1. Identify the Senior Leadership (CEO, MD, Founders).
         2. Identify the PE/VC Investment Director if mentioned.
         3. Identify ALL Advisors (Corporate Finance, Legal, Tax) - both firms AND specific individuals.

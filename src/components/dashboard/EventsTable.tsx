@@ -124,7 +124,7 @@ export default function EventsTable() {
           actorId: 'apify/google-search-scraper',
           input: { 
             queries: [
-              'new PE investment UK 2024',
+              'new Private Equity investment UK 2024',
               'CFO appointment Manchester recruitment',
               'Finance Director hire London PE',
               'M&A news finance UK mergers',
@@ -133,7 +133,12 @@ export default function EventsTable() {
               'Private Equity exit UK news',
               'Interim FD roles Manchester',
               'Scale-up company CFO hiring UK',
-              'company restructuring finance team news UK'
+              'company restructuring finance team news UK',
+              'refinancing news finance UK',
+              'positive trading update UK company',
+              'acquisition completed finance news UK',
+              'business sale news UK finance',
+              'new CFO starting role PE portco'
             ].join(', '),
             maxPagesPerQuery: 1 
           }
@@ -149,7 +154,7 @@ export default function EventsTable() {
           action: 'trigger',
           actorId: 'apify/linkedin-search-scraper',
           input: { 
-            searchUrl: 'https://www.linkedin.com/search/results/content/?keywords=(hiring%20OR%20"new%20role"%20OR%20"appointed")%20AND%20(CFO%20OR%20"Finance%20Director"%20OR%20"Financial%20Controller")%20AND%20(PE%20OR%20VC%20OR%20"Private%20Equity"%20OR%20"Venture%20Capital"%20OR%20"Growth%20Capital")'
+            searchUrl: 'https://www.linkedin.com/search/results/content/?keywords=(hiring%20OR%20"new%20role"%20OR%20"appointed"%20OR%20"started")%20AND%20(CFO%20OR%20"Finance%20Director"%20OR%20"Financial%20Controller"%20OR%20"FD")%20AND%20(PE%20OR%20VC%20OR%20"Private%20Equity"%20OR%20"Venture%20Capital"%20OR%20"refinancing"%20OR%20"acquisition")'
           }
         })
       })
@@ -295,9 +300,22 @@ export default function EventsTable() {
                         <span className="text-white font-semibold group-hover:text-brand-orange transition-colors">
                           {event.company_name}
                         </span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <MapPin className="w-3 h-3 text-white/20" />
-                          <span className="text-[10px] text-white/40">{event.geography || 'N/A'}</span>
+                        <div className="flex items-center gap-3 mt-1">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-white/20" />
+                            <span className="text-[10px] text-white/40">{event.geography || 'N/A'}</span>
+                          </div>
+                          {event.source_url && event.source_url !== '#' && (
+                            <a 
+                              href={event.source_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-[10px] text-brand-orange hover:underline group/link"
+                            >
+                              <ExternalLink className="w-3 h-3 text-brand-orange/60 group-hover/link:text-brand-orange" />
+                              Source
+                            </a>
+                          )}
                           <span className="text-white/10">•</span>
                           <span className="text-[10px] text-white/40">{event.sector || 'N/A'}</span>
                         </div>
