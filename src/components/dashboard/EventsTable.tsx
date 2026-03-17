@@ -123,7 +123,18 @@ export default function EventsTable() {
           action: 'trigger',
           actorId: 'apify/google-search-scraper',
           input: { 
-            queries: 'new PE investment UK, CFO appointment Manchester, M&A news finance UK, series B funding recruitment triggers', 
+            queries: [
+              'new PE investment UK 2024',
+              'CFO appointment Manchester recruitment',
+              'Finance Director hire London PE',
+              'M&A news finance UK mergers',
+              'Series A funding UK finance team',
+              'Series B funding UK finance team',
+              'Private Equity exit UK news',
+              'Interim FD roles Manchester',
+              'Scale-up company CFO hiring UK',
+              'company restructuring finance team news UK'
+            ].join(', '),
             maxPagesPerQuery: 1 
           }
         })
@@ -137,7 +148,9 @@ export default function EventsTable() {
         body: JSON.stringify({ 
           action: 'trigger',
           actorId: 'apify/linkedin-search-scraper',
-          input: { searchUrl: 'https://www.linkedin.com/search/results/content/?keywords=hiring%20CFO%20OR%20"finance%20director"%20PE%20OR%20"venture%20capital"' }
+          input: { 
+            searchUrl: 'https://www.linkedin.com/search/results/content/?keywords=(hiring%20OR%20"new%20role"%20OR%20"appointed")%20AND%20(CFO%20OR%20"Finance%20Director"%20OR%20"Financial%20Controller")%20AND%20(PE%20OR%20VC%20OR%20"Private%20Equity"%20OR%20"Venture%20Capital"%20OR%20"Growth%20Capital")'
+          }
         })
       })
       const linkedinData = await linkedinRes.json()
