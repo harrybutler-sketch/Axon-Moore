@@ -69,24 +69,26 @@ export async function POST(request: Request) {
       const results: any[] = []
 
       console.log(`[Apify Ingest] Processing ${items.length} items...`);
-      // Limit to first 10 items for a rich demo
-      for (const item of items.slice(0, 10)) {
-        // Extract raw text from different scraper formats
+      
+      const itemSubset = items.slice(0, 10);
+      const processingPromises = itemSubset.map(async (item: any) => {
         const content = `${item.title || ''}\n${item.description || item.snippet || item.text || ''}`
+        const itemId = item.id || Math.random().toString(36).substr(2, 9);
         
         try {
-          console.log(`[Apify Ingest] Extracting from: ${item.title?.substring(0, 30)}...`);
-          const extractedData = await extractMarketTrigger(content)
-          console.log(`[Apify Ingest] Success: ${extractedData.company_name}`);
-          const eventData = {
-            id: 'apify-' + (item.id || Math.random().toString(36).substr(2, 9)),
+          console.log(`[Apify Ingest] Extracting: ${item.title?.substring(0, 30)}...`);
+          // AI Extraction (Concurrent)
+          const extractedData = await extractMarketTrigger(content);
+          
+          return {
+            id: 'apify-' + itemId,
             company_name: extractedData.company_name,
             trigger_type: mapTriggerType(extractedData.event_type),
             summary: extractedData.summary,
             sector: extractedData.sector,
             geography: extractedData.geography,
             announcement_date: extractedData.event_date || new Date().toISOString(),
-            source_url: item.url || '#',
+            source_url: item.url || item.link || '#',
             priority_score: mapUrgencyToScore(extractedData.urgency_level),
             status: 'new',
             raw_text: content,
@@ -99,23 +101,43 @@ export async function POST(request: Request) {
             is_automation_ingested: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          }
-
-          // Always add to results for the local demo return
-          results.push(eventData)
-
-          // Try to save to Supabase if available
-          try {
-            await supabase.from('events').insert([eventData])
-          } catch (dbErr) {
-            // Silently fail DB insert in demo mode
-          }
+          };
         } catch (e) {
-          console.error('Error processing item:', e)
+          console.warn(`[Apify Ingest] AI Failed for ${item.title?.substring(0, 15)}, using raw fallback.`);
+          // RAW FALLBACK (Keep the "relevant stuff")
+          return {
+            id: 'apify-raw-' + itemId,
+            company_name: item.title?.split('|')[0]?.split('-')[0]?.trim() || 'Detected Interest',
+            trigger_type: 'other',
+            summary: item.description || item.snippet || 'Market interest detected via Apify.',
+            sector: 'Various',
+            geography: 'UK',
+            announcement_date: new Date().toISOString(),
+            source_url: item.url || item.link || '#',
+            priority_score: 50,
+            status: 'new',
+            raw_text: content,
+            is_automation_ingested: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
         }
-      }
+      });
 
-      return NextResponse.json({ ingestedCount: results.length, events: results })
+      const processedResults = await Promise.all(processingPromises);
+      const events = processedResults.filter(Boolean);
+
+      // Save to Supabase (Parallel but non-blocking for response)
+      events.forEach(async (event) => {
+        try {
+          await supabase.from('events').insert([event])
+        } catch (dbErr) {
+          // Silently fail DB insert in demo
+        }
+      });
+
+      console.log(`[Apify Ingest] Successfully prepared ${events.length} events.`);
+      return NextResponse.json({ ingestedCount: events.length, events })
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
@@ -126,6 +148,7 @@ export async function POST(request: Request) {
 }
 
 function mapTriggerType(type: string): string {
+  if (!type) return 'other';
   const types = [
     'PE investment', 'VC investment', 'acquisition', 'disposal', 
     'refining', 'leadership hire', 'leadership exit', 
@@ -136,6 +159,7 @@ function mapTriggerType(type: string): string {
 }
 
 function mapUrgencyToScore(urgency: string): number {
+  if (!urgency) return 50;
   switch (urgency.toLowerCase()) {
     case 'high': return 90
     case 'medium': return 60
