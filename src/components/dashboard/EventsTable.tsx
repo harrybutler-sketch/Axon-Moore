@@ -182,23 +182,17 @@ export default function EventsTable() {
           actorId: 'apify~google-search-scraper',
           input: { 
             queries: [
-              'new Private Equity investment UK 2024',
-              'CFO appointment Manchester recruitment',
-              'Finance Director hire London PE',
-              'M&A news finance UK mergers',
-              'Series A funding UK finance team',
-              'Series B funding UK finance team',
-              'Private Equity exit UK news',
-              'Interim FD roles Manchester',
-              'Scale-up company CFO hiring UK',
-              'company restructuring finance team news UK',
-              'refinancing news finance UK',
-              'positive trading update UK company',
-              'acquisition completed finance news UK',
-              'business sale news UK finance',
-              'new CFO starting role PE portco'
+              'new Private Equity investment UK after:2026-03-10',
+              'CFO appointment Manchester recruitment after:2026-03-10',
+              'Finance Director hire London PE after:2026-03-10',
+              'M&A news finance UK mergers after:2026-03-10',
+              'Series A funding UK finance team after:2026-03-10',
+              'Series B funding UK finance team after:2026-03-10',
+              'Private Equity exit UK news after:2026-03-10',
+              'Scale-up company CFO hiring UK after:2026-03-10'
             ].join(', '),
-            maxPagesPerQuery: 1 
+            maxPagesPerQuery: 1,
+            timeRange: 'w' // Strictly past week
           }
         })
       })
