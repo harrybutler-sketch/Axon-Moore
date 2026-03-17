@@ -42,3 +42,24 @@ export async function getApifyDataset(datasetId: string) {
 
   return await response.json();
 }
+
+export async function waitForApifyRun(runId: string, maxWaitSeconds = 60) {
+  const token = process.env.APIFY_API_TOKEN;
+  const startTime = Date.now();
+  
+  while ((Date.now() - startTime) / 1000 < maxWaitSeconds) {
+    const response = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${token}`);
+    if (!response.ok) throw new Error('Failed to fetch run status');
+    
+    const { data } = await response.json();
+    if (data.status === 'SUCCEEDED') return data;
+    if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(data.status)) {
+      throw new Error(`Apify Run finished with status: ${data.status}`);
+    }
+    
+    // Wait 2 seconds before polling again
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+  
+  throw new Error('Apify Run timed out');
+}

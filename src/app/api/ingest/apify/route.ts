@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { runApifyActor, getApifyDataset } from '@/lib/apify'
+import { runApifyActor, getApifyDataset, waitForApifyRun } from '@/lib/apify'
 import { extractMarketTrigger } from '@/lib/openai'
 
 export async function POST(request: Request) {
   try {
-    const { action, actorId, input, datasetId } = await request.json()
+    const { action, actorId, input, datasetId, runId } = await request.json()
 
     if (action === 'trigger') {
       const token = process.env.APIFY_API_TOKEN;
@@ -32,11 +32,27 @@ export async function POST(request: Request) {
     const supabase = await createClient()
 
     if (action === 'ingest') {
-      if (!datasetId) {
-        return NextResponse.json({ error: 'Dataset ID is required' }, { status: 400 })
+      if (!datasetId && !runId) {
+        return NextResponse.json({ error: 'Dataset ID or Run ID is required' }, { status: 400 })
       }
 
-      const rawItems = await getApifyDataset(datasetId)
+      let targetDatasetId = datasetId;
+
+      // If runId is provided, wait for it to finish and get the datasetId
+      if (runId) {
+        console.log(`[Apify Ingest] Waiting for run ${runId} to finish...`);
+        try {
+          const run = await waitForApifyRun(runId);
+          targetDatasetId = run.defaultDatasetId;
+          console.log(`[Apify Ingest] Run finished. Dataset ID: ${targetDatasetId}`);
+        } catch (waitErr: any) {
+          console.error(`[Apify Ingest] Wait failed: ${waitErr.message}`);
+          return NextResponse.json({ error: waitErr.message }, { status: 500 });
+        }
+      }
+
+      console.log(`[Apify Ingest] Fetching data from dataset ${targetDatasetId}...`);
+      const rawItems = await getApifyDataset(targetDatasetId)
       
       // Flatten organic results if they exist (Google Search format)
       let items: any[] = []
@@ -52,14 +68,16 @@ export async function POST(request: Request) {
 
       const results: any[] = []
 
-      // Limit to first 12 items for a rich demo
-      for (const item of items.slice(0, 12)) {
+      console.log(`[Apify Ingest] Processing ${items.length} items...`);
+      // Limit to first 10 items for a rich demo
+      for (const item of items.slice(0, 10)) {
         // Extract raw text from different scraper formats
-        const content = item.description || item.text || item.title || JSON.stringify(item)
+        const content = `${item.title || ''}\n${item.description || item.snippet || item.text || ''}`
         
         try {
+          console.log(`[Apify Ingest] Extracting from: ${item.title?.substring(0, 30)}...`);
           const extractedData = await extractMarketTrigger(content)
-          
+          console.log(`[Apify Ingest] Success: ${extractedData.company_name}`);
           const eventData = {
             id: 'apify-' + (item.id || Math.random().toString(36).substr(2, 9)),
             company_name: extractedData.company_name,

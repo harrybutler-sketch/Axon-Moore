@@ -223,12 +223,12 @@ export default function EventsTable() {
 
       // 4. Ingest Results (Google)
       let realEvents: MarketEvent[] = []
-      if (googleData.datasetId) {
+      if (googleData.runId) {
         try {
           const ingestRes = await fetch('/api/ingest/apify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'ingest', datasetId: googleData.datasetId })
+            body: JSON.stringify({ action: 'ingest', runId: googleData.runId })
           })
           const googleIngest = await ingestRes.json()
           if (googleIngest.events) realEvents = [...realEvents, ...googleIngest.events]
@@ -238,12 +238,12 @@ export default function EventsTable() {
       }
 
       // 5. Ingest Results (LinkedIn)
-      if (linkedinData.datasetId) {
+      if (linkedinData.runId) {
         try {
           const ingestRes = await fetch('/api/ingest/apify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'ingest', datasetId: linkedinData.datasetId })
+            body: JSON.stringify({ action: 'ingest', runId: linkedinData.runId })
           })
           const linkedinIngest = await ingestRes.json()
           if (linkedinIngest.events) realEvents = [...realEvents, ...linkedinIngest.events]
