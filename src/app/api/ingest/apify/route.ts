@@ -6,12 +6,14 @@ import { extractMarketTrigger } from '@/lib/openai'
 export async function POST(request: Request) {
   try {
     const { action, actorId, input, datasetId } = await request.json()
-    const supabase = await createClient()
 
     if (action === 'trigger') {
       const run = await runApifyActor(actorId, input)
+      console.log(`[Apify] Triggered actor ${actorId}. Run ID: ${run.id}`)
       return NextResponse.json({ runId: run.id, datasetId: run.defaultDatasetId })
     }
+
+    const supabase = await createClient()
 
     if (action === 'ingest') {
       if (!datasetId) {

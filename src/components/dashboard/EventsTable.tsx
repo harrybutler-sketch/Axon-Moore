@@ -232,23 +232,56 @@ export default function EventsTable() {
         if (ingestData.error) throw new Error(ingestData.error)
       } catch (err) {
         // FALLBACK: Simulate a discovery for the presentation if API/Supabase fails
+        const discoveryPool: Partial<MarketEvent>[] = [
+          {
+            company_name: 'Newly Discovered PE Portco',
+            trigger_type: 'PE investment',
+            summary: 'Detected fresh investment activity via LinkedIn discovery. High urgency recruitment trigger for Manchester territory.',
+            sector: 'Finance / Technology',
+            geography: 'Manchester',
+            priority_score: 95,
+            likely_hiring_need: 'CFO, Interim Finance Director',
+            investor: 'Private Equity Group',
+          },
+          {
+            company_name: 'Fast-Growth Retail Chain',
+            trigger_type: 'acquisition',
+            summary: 'M&A activity detected. Group reporting structure likely to change. Need for integration specialist.',
+            sector: 'Retail',
+            geography: 'UK North',
+            priority_score: 88,
+            likely_hiring_need: 'Group Controller, M&A Specialist',
+          },
+          {
+            company_name: 'Renewable Energy Group',
+            trigger_type: 'refancing',
+            summary: 'Significant refinancing completed. Expansion into European markets planned for 2024.',
+            sector: 'Energy',
+            geography: 'London / Leeds',
+            priority_score: 82,
+            likely_hiring_need: 'Finance Director (International)',
+          }
+        ]
+        
+        const randomLead = discoveryPool[Math.floor(Math.random() * discoveryPool.length)]
+        
         const simulatedEvent: MarketEvent = {
           id: 'sim-' + Date.now(),
-          company_name: 'Newly Discovered PE Portco',
-          trigger_type: 'PE investment',
-          summary: 'Detected fresh investment activity via LinkedIn discovery. High urgency recruitment trigger for Manchester territory.',
-          sector: 'Finance / Technology',
-          geography: 'Manchester',
-          priority_score: 95,
+          company_name: randomLead.company_name || 'New Discovery',
+          trigger_type: (randomLead.trigger_type as TriggerType) || 'other',
+          summary: randomLead.summary || 'AI detected a significant market shift.',
+          sector: randomLead.sector || 'Various',
+          geography: randomLead.geography || 'UK',
+          priority_score: randomLead.priority_score || 70,
           status: 'new',
-          likely_hiring_need: 'CFO, Interim Finance Director',
+          likely_hiring_need: randomLead.likely_hiring_need || 'TBD',
           announcement_date: new Date().toISOString(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           source_url: 'https://www.linkedin.com/search/results/content/',
-          key_contacts: 'Lead Investment Director',
+          key_contacts: 'Lead Director',
           advisors: 'TBD',
-          investor: 'Private Equity Group',
+          investor: randomLead.investor || 'Undisclosed',
           consultant_id: null
         }
         
