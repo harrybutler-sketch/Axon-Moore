@@ -8,8 +8,11 @@ export async function POST(request: Request) {
     const { action, actorId, input, datasetId } = await request.json()
 
     if (action === 'trigger') {
+      const hasToken = !!process.env.APIFY_API_TOKEN;
+      console.log(`[Apify] Trigger request for ${actorId}. Token available: ${hasToken}`);
+      
       const run = await runApifyActor(actorId, input)
-      console.log(`[Apify] Triggered actor ${actorId}. Run ID: ${run.id}`)
+      console.log(`[Apify] Trigger successful. Run ID: ${run.id}`);
       return NextResponse.json({ runId: run.id, datasetId: run.defaultDatasetId })
     }
 

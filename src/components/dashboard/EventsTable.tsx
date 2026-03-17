@@ -179,7 +179,7 @@ export default function EventsTable() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           action: 'trigger',
-          actorId: 'apify/google-search-scraper',
+          actorId: 'apify~google-search-scraper',
           input: { 
             queries: [
               'new Private Equity investment UK 2024',
@@ -210,7 +210,7 @@ export default function EventsTable() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           action: 'trigger',
-          actorId: 'apify/linkedin-search-scraper',
+          actorId: 'apify~linkedin-search-scraper',
           input: { 
             searchUrl: 'https://www.linkedin.com/search/results/content/?keywords=(hiring%20OR%20"new%20role"%20OR%20"appointed"%20OR%20"started")%20AND%20(CFO%20OR%20"Finance%20Director"%20OR%20"Financial%20Controller"%20OR%20"FD")%20AND%20(PE%20OR%20"VC"%20OR%20"Private%20Equity"%20OR%20"Venture%20Capital"%20OR%20"refinancing"%20OR%20"acquisition")'
           }
